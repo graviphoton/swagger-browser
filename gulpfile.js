@@ -10,6 +10,8 @@ gulp.paths = {
     "dist": "dist",
     "sources": [
         "index.html",
+        "nginx.conf",
+        "config.js",
         "bower_components/angular-swagger-ui/dist/css/swagger-ui.min.css",
         "bower_components/airbrake-js-client/dist/client.js",
         "bower_components/jquery/dist/jquery.min.js",
