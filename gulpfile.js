@@ -27,7 +27,11 @@ gulp.task('clean', function(done) {
     $.del([gulp.paths.dist + '/'], done);
 });
 
-gulp.task('build', function(done) {
+gulp.task('bower', function() {
+    return $.bower();
+});
+
+gulp.task('build', ['bower'], function(done) {
     gulp.src(gulp.paths.sources)
         .pipe($.copy(gulp.paths.dist));
 });
