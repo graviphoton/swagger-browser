@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html ng-app="graviphotonSwagger">
     <link href="https://cdn.nova.scapp.io/css/comstrap.min.css" rel="stylesheet" type="text/css"/>
     <link href="https://cdn.nova.scapp.io/css/comstrap-theme.min.css" rel="stylesheet" type="text/css"/>
@@ -16,12 +17,18 @@
         background-color: rgba(255, 255, 255, 0.95);
         margin-bottom: 130px;
     }
+    .api-version {
+        text-transform: lowercase;
+    }
+    .api-version span.h4 {
+        font-size: 14px;
+    }
     </style>
     <body style="margin-top:70px" ng-controller="SwaggerUiCtrl">
         <nav class="navbar navbar-default navbar-fixed-top">
             <div class="container-fluid">
                 <div class="navbar-header">
-                    <a href="#/" class="navbar-brand">
+                    <a class="navbar-brand">
                         <img src="https://cdn.nova.scapp.io/img/sc_logo.png">
                     </a>
                     <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
