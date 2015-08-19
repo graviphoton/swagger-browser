@@ -1,0 +1,140 @@
+<html ng-app="graviphotonSwagger">
+    <link href="https://cdn.nova.scapp.io/css/comstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="https://cdn.nova.scapp.io/css/comstrap-theme.min.css" rel="stylesheet" type="text/css"/>
+    <link href="/bower_components/angular-swagger-ui/dist/css/swagger-ui.min.css" rel="stylesheet" type="text/css"/>
+    <style>
+    html {
+        height: 100%;
+    }
+    body {
+        background-image: url("https://graviphoton-develop.nova.scapp.io/assets/images/evoja_logo.png");
+        background-repeat: no-repeat;
+        background-position: right bottom;
+        background-attachment: fixed;
+    }
+    .main-content {
+        background-color: rgba(255, 255, 255, 0.95);
+        margin-bottom: 130px;
+    }
+    </style>
+    <body style="margin-top:70px" ng-controller="SwaggerUiCtrl">
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a href="#/" class="navbar-brand">
+                        <img src="https://cdn.nova.scapp.io/img/sc_logo.png">
+                    </a>
+                    <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="navbar-collapse collapse" id="navbar-main">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <select class="form-control navbar-btn" id="select" ng-model="url" ng-change="onChange(this)">
+                                <option ng-repeat="host in hosts" value="{{ host.ref + '/swagger.json' }}">{{ host.name }}</option>
+                            </select>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="container-fluid main-content">
+            <div ng-show="isError" class="alert alert-danger">
+                <strong>Error fetching swagger</strong> please choose a different backend from the menu or try again later.
+            </div>
+            <div ng-show="isLoading" class="sc-spinner-container">
+                <span class="sc-spinner sc-spinner-lg"></span>
+                <h5 class="sc-spinner-text">loading<span class="sc-spinner-dots">.</span></h5>
+            </div>
+            <div ng-show="url && !isLoading" swagger-ui loading="isLoading" url="url" api-explorer="true" error-handler="onError"></div>
+            <div ng-show="!url && !isError">
+                <h1>Swagger UI</h1>
+                <p>Please choose a backend from the menu.</p>
+            </div>
+        </div>
+        <script src="/bower_components/jquery/dist/jquery.min.js"></script>
+        <script src="https://cdn.nova.scapp.io/js/comstrap.min.js"></script>
+        <script src="/bower_components/angular/angular.min.js"></script>
+        <script src="/bower_components/angular-swagger-ui/dist/scripts/swagger-ui.min.js"></script>
+        <script src="/bower_components/angular-resource/angular-resource.min.js"></script>
+        <script src="/bower_components/angular-cookies/angular-cookies.min.js"></script>
+        <script src="/bower_components/angular-sanitize/angular-sanitize.min.js"></script>
+        <script>
+            angular
+                .module('graviphotonSwagger', ['ngResource', 'ngSanitize', 'ngCookies', 'swaggerUi'])
+                .controller('SwaggerUiCtrl', ['$scope', '$cookies', 'Registry', function($scope, $cookies, Registry) {
+                    $scope.isLoading = false;
+
+                    $scope.hosts = Registry.query();
+                    $scope.url = $cookies.swaggerUrl ? $cookies.swaggerUrl : false;
+
+                    $scope.onError = function() {
+                        $scope.isError = true;
+                        $scope.url = false;
+
+                    };
+                    $scope.onChange = function() {
+                        $scope.isError = false;
+                        $cookies.swaggerUrl = $scope.url;
+                    };
+
+                }])
+                .factory('Registry', ['$resource', function($resource) {
+                    return $resource('https://gravity-platform-registry.nova.scapp.io/registry');
+                }])
+                .service('swaggerUiHost', ['$q', '$cookies', function($q, $cookies) {
+                    // inject full service host into swagger since we only get sent localhost from graviton
+                    this.execute = function(swaggerSchema) {
+                        var deferred = $q.defer();
+
+                        var parser = document.createElement('a');
+                        parser.href = $cookies.swaggerUrl;
+                        if (parser.href) {
+                            swaggerSchema.infos.host = parser.host;
+                            deferred.resolve();
+                        } else {
+                            deferred.reject({message: 'Failed to set host', code: '500'});
+                        }
+
+                        return deferred.promise;
+                    };
+                }])
+                .service('swaggerUiExplorerRequest', ['$q', '$cookies', function($q, $cookies) {
+                    // fix explorer requests since we get sent to localhost by gravitons swagger
+                    this.execute = function(request) {
+                        var deferred = $q.defer();
+                        var parser = document.createElement('a');
+
+                        parser.href = $cookies.swaggerUrl;
+                        if (parser.host) {
+                            url = parser.protocol + '//' + parser.host 
+                        } else {
+                            deferred.reject({message: 'Failed to set host', code: '500'});
+                        }
+
+                        parser.href = request.url;
+                        if (parser.pathname) {
+                            path = parser.pathname;
+                            if (path.slice(0,2) == '//') {
+                                path = path.slice(1);
+                            }
+                            url += path + parser.search + parser.hash;
+                            request.url = url
+                        } else {
+                            deferred.reject({message: 'Failed to set host', code: '500'});
+                        }
+
+                        deferred.resolve();
+                        return deferred.promise;
+                    }
+                }])
+                .run(function(swaggerModules, swaggerUiHost, swaggerUiExplorerRequest){
+                    swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
+                    swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
+                });
+        </script>
+    </body>
+</html>
