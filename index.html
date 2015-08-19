@@ -55,6 +55,7 @@
                 <p>Please choose a backend from the menu.</p>
             </div>
         </div>
+        <script src="/bower_components/airbrake-js-client/dist/client.js"></script>
         <script src="/bower_components/jquery/dist/jquery.min.js"></script>
         <script src="https://cdn.nova.scapp.io/js/comstrap.min.js"></script>
         <script src="/bower_components/angular/angular.min.js"></script>
@@ -63,28 +64,67 @@
         <script src="/bower_components/angular-cookies/angular-cookies.min.js"></script>
         <script src="/bower_components/angular-sanitize/angular-sanitize.min.js"></script>
         <script>
+        var swaggerBrowserConfig = {
+            "registryEndpoint": "https://gravity-platform-registry.nova.scapp.io/registry",
+            "airbrakeId": "",
+            "airbrakeKey": "",
+            "airbrakeHost": ""
+        };
+        //<!--# include file="config.js" -->
+        </script>
+        <script>
             angular
                 .module('graviphotonSwagger', ['ngResource', 'ngSanitize', 'ngCookies', 'swaggerUi'])
-                .controller('SwaggerUiCtrl', ['$scope', '$cookies', 'Registry', function($scope, $cookies, Registry) {
+                .constant('config', swaggerBrowserConfig)
+                .run(function(swaggerModules, swaggerUiHost, swaggerUiExplorerRequest){
+                    swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
+                    swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
+                })
+                .controller('SwaggerUiCtrl', function($scope, $cookies, airbrake, Registry) {
                     $scope.isLoading = false;
 
                     $scope.hosts = Registry.query();
                     $scope.url = $cookies.swaggerUrl ? $cookies.swaggerUrl : false;
 
-                    $scope.onError = function() {
+                    $scope.onError = function(data, status) {
                         $scope.isError = true;
+                        airbrake.notify({
+                            "message": "Failed to load swagger from " + $scope.url,
+                            "status": status,
+                            "data": data
+                        });
                         $scope.url = false;
-
                     };
                     $scope.onChange = function() {
                         $scope.isError = false;
                         $cookies.swaggerUrl = $scope.url;
                     };
 
-                }])
-                .factory('Registry', ['$resource', function($resource) {
-                    return $resource('https://gravity-platform-registry.nova.scapp.io/registry');
-                }])
+                })
+                .factory('Registry', function($resource, config) {
+                    return $resource(config.registryEndpoint);
+                })
+                .factory('airbrake', function(config) {
+                    var airbrake = new airbrakeJs.Client({
+                        projectId: config.airbrakeId,
+                        projectKey: config.airbrakeKey,
+                    });
+                    if (config.airbrakeHost) {
+                        airbrake.setHost(config.airbrakeHost);
+                    }
+                    return airbrake;
+                })
+                .factory('$exceptionHandler', function ($log, airbrake) {
+                    airbrake.addFilter(function (notice) {
+                        return notice;
+                    });
+
+                    return function (exception, cause) {
+                        $log.error(exception);
+                        exception.params = {cause: cause};
+                        airbrake.notify(exception);
+                    };
+                })
                 .service('swaggerUiHost', ['$q', '$cookies', function($q, $cookies) {
                     // inject full service host into swagger since we only get sent localhost from graviton
                     this.execute = function(swaggerSchema) {
@@ -130,11 +170,7 @@
                         deferred.resolve();
                         return deferred.promise;
                     }
-                }])
-                .run(function(swaggerModules, swaggerUiHost, swaggerUiExplorerRequest){
-                    swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
-                    swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
-                });
+                }]);
         </script>
     </body>
 </html>
