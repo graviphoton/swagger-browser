@@ -87,11 +87,15 @@
                     swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
                     swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
                 })
-                .controller('SwaggerUiCtrl', function($scope, $cookies, airbrake, Registry) {
+                .controller('SwaggerUiCtrl', function($scope, $cookies, $rootScope, airbrake, Registry) {
                     $scope.isLoading = false;
 
                     $scope.hosts = Registry.query();
+
+                    $scope.cookieUrl = $cookies.swaggerUrl;
                     $scope.url = $cookies.swaggerUrl ? $cookies.swaggerUrl : false;
+                    $scope.isDefault = $scope.cookieUrl == $scope.url;
+                    $rootScope.url = $scope.url;
 
                     $scope.onError = function(data, status) {
                         $scope.isError = true;
@@ -104,7 +108,13 @@
                     };
                     $scope.onChange = function() {
                         $scope.isError = false;
+                        $rootScope.url = $scope.url;
+                        $scope.isDefault = $scope.cookieUrl == $scope.url;
+                    };
+                    $scope.onSetDefault = function() {
                         $cookies.swaggerUrl = $scope.url;
+                        $scope.cookieUrl = $cookies.swaggerUrl;
+                        $scope.isDefault = true;
                     };
 
                 })
@@ -132,13 +142,13 @@
                         airbrake.notify(exception);
                     };
                 })
-                .service('swaggerUiHost', ['$q', '$cookies', function($q, $cookies) {
+                .service('swaggerUiHost', function($q, $rootScope) {
                     // inject full service host into swagger since we only get sent localhost from graviton
                     this.execute = function(swaggerSchema) {
                         var deferred = $q.defer();
 
                         var parser = document.createElement('a');
-                        parser.href = $cookies.swaggerUrl;
+                        parser.href = $rootScope.url;
                         if (parser.href) {
                             swaggerSchema.infos.host = parser.host;
                             deferred.resolve();
@@ -148,14 +158,14 @@
 
                         return deferred.promise;
                     };
-                }])
-                .service('swaggerUiExplorerRequest', ['$q', '$cookies', function($q, $cookies) {
+                })
+                .service('swaggerUiExplorerRequest', function($q, $rootScope) {
                     // fix explorer requests since we get sent to localhost by gravitons swagger
                     this.execute = function(request) {
                         var deferred = $q.defer();
                         var parser = document.createElement('a');
 
-                        parser.href = $cookies.swaggerUrl;
+                        parser.href = $rootScope.url;
                         if (parser.host) {
                             url = parser.protocol + '//' + parser.host 
                         } else {
@@ -176,8 +186,8 @@
 
                         deferred.resolve();
                         return deferred.promise;
-                    }
-                }]);
+                    };
+                });
         </script>
     </body>
 </html>
