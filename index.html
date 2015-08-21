@@ -39,10 +39,24 @@
                 </div>
                 <div class="navbar-collapse collapse" id="navbar-main">
                     <ul class="nav navbar-nav navbar-right">
-                        <li>
+                        <li ng-show="!hosts.$resolved">
+                            <a><span class="sc-spinner sc-spinner-sm"></span></a>
+                        </li>
+                        <li ng-show="hosts.$resolved && hosts.length == 0">
+                            <a><span class="picto-robot text-danger"> No registered backends</span></a>
+                        </li>
+                        <li ng-show="hosts.$resolved && hosts.length > 0">
                             <select class="form-control navbar-btn" id="select" ng-model="url" ng-change="onChange(this)">
                                 <option ng-repeat="host in hosts" value="{{ host.ref + '/swagger.json' }}">{{ host.name }}</option>
                             </select>
+                        </li>
+                        <li ng-show="hosts.$resolved && hosts.length > 0 && url">
+                            <button class="btn navbar-btn btn-primary" ng-show="!isDefault" ng-click="onSetDefault()" >
+                                <span class="picto-save"></span>
+                            </button>
+                            <button class="btn navbar-btn btn-primary disabled" ng-show="isDefault" disabled>
+                                <span class="picto-save"></span>
+                            </button>
                         </li>
                     </ul>
                 </div>
