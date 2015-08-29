@@ -100,11 +100,11 @@
                         $scope.host = {
                             "ref": $location.search().host
                         };
+                        $rootScope.url = $scope.host.ref + '/swagger.json';
                         $scope.isLoading = true;
                     } else {
                         $scope.url = false;
                     }
-                    $rootScope.url = $scope.host.ref + '/swagger.json';
 
                     $scope.onError = function(data, status) {
                         $scope.isError = true;
