@@ -61,7 +61,7 @@
                 <span class="sc-spinner sc-spinner-lg"></span>
                 <h5 class="sc-spinner-text">loading<span class="sc-spinner-dots">.</span></h5>
             </div>
-            <div ng-show="host && !isLoading" swagger-ui loading="isLoading" url="url" api-explorer="true" error-handler="onError"></div>
+            <div ng-show="host && !isLoading && !isError" swagger-ui loading="isLoading" url="url" api-explorer="true" error-handler="onError"></div>
             <div ng-show="!host && !isError">
                 <h1>Swagger UI</h1>
                 <p>Please choose a backend from the menu.</p>
@@ -113,7 +113,7 @@
                             "status": status,
                             "data": data
                         });
-                        $scope.host = false;
+                        $rootScope.url = false;
                     };
                     $scope.onChange = function() {
                         $scope.isError = false;
