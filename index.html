@@ -46,8 +46,7 @@
                             <a><span class="picto-robot text-danger"> No registered backends</span></a>
                         </li>
                         <li ng-show="hosts.$resolved && hosts.length > 0">
-                            <select class="form-control navbar-btn" id="select" ng-model="url" ng-change="onChange(this)">
-                                <option ng-repeat="host in hosts" value="{{ host.ref + '/swagger.json' }}">{{ host.name }}</option>
+                            <select class="form-control navbar-btn" id="select" ng-model="host" ng-change="onChange(this)" ng-options="host.name for host in hosts track by host.ref">
                             </select>
                         </li>
                         <li ng-show="hosts.$resolved && hosts.length > 0 && url">
@@ -70,8 +69,8 @@
                 <span class="sc-spinner sc-spinner-lg"></span>
                 <h5 class="sc-spinner-text">loading<span class="sc-spinner-dots">.</span></h5>
             </div>
-            <div ng-show="url && !isLoading" swagger-ui loading="isLoading" url="url" api-explorer="true" error-handler="onError"></div>
-            <div ng-show="!url && !isError">
+            <div ng-show="host && !isLoading" swagger-ui loading="isLoading" url="url" api-explorer="true" error-handler="onError"></div>
+            <div ng-show="!host && !isError">
                 <h1>Swagger UI</h1>
                 <p>Please choose a backend from the menu.</p>
             </div>
@@ -101,20 +100,32 @@
                     swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
                     swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
                 })
-                .controller('SwaggerUiCtrl', function($scope, $cookies, $rootScope, airbrake, Registry) {
+                .controller('SwaggerUiCtrl', function($scope, $cookies, $rootScope, $location, airbrake, Registry) {
                     $scope.isLoading = false;
 
                     $scope.hosts = Registry.query();
 
                     $scope.cookieUrl = $cookies.swaggerUrl;
-                    $scope.url = $cookies.swaggerUrl ? $cookies.swaggerUrl : false;
-                    $scope.isDefault = $scope.cookieUrl == $scope.url;
-                    $rootScope.url = $scope.url;
+                    if ($location.search().host) {
+                        $scope.host = {
+                            "ref": $location.search().host
+                        };
+                        $scope.isLoading = true;
+                    } else if ($cookies.swaggerUrl) {
+                        $scope.host = {
+                            "ref": $cookies.swaggerUrl
+                        };
+                        $scope.isLoading = true;
+                    } else {
+                        $scope.url = false;
+                    }
+                    $scope.isDefault = $scope.cookieUrl == $scope.host.ref;
+                    $rootScope.url = $scope.host.ref + '/swagger.json';
 
                     $scope.onError = function(data, status) {
                         $scope.isError = true;
                         airbrake.notify({
-                            "message": "Failed to load swagger from " + $scope.url,
+                            "message": "Failed to load swagger from " + $scope.host.ref + '/swagger.json',
                             "status": status,
                             "data": data
                         });
@@ -122,11 +133,12 @@
                     };
                     $scope.onChange = function() {
                         $scope.isError = false;
-                        $rootScope.url = $scope.url;
-                        $scope.isDefault = $scope.cookieUrl == $scope.url;
+                        $rootScope.url = $scope.host.ref + '/swagger.json';
+                        $location.search('host', $scope.host.ref);
+                        $scope.isDefault = $scope.cookieUrl == $scope.host.ref;
                     };
                     $scope.onSetDefault = function() {
-                        $cookies.swaggerUrl = $scope.url;
+                        $cookies.swaggerUrl = $scope.host.ref;
                         $scope.cookieUrl = $cookies.swaggerUrl;
                         $scope.isDefault = true;
                     };
