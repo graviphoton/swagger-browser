@@ -49,14 +49,6 @@
                             <select class="form-control navbar-btn" id="select" ng-model="host" ng-change="onChange(this)" ng-options="host.name for host in hosts track by host.ref">
                             </select>
                         </li>
-                        <li ng-show="hosts.$resolved && hosts.length > 0 && url">
-                            <button class="btn navbar-btn btn-primary" ng-show="!isDefault" ng-click="onSetDefault()" >
-                                <span class="picto-save"></span>
-                            </button>
-                            <button class="btn navbar-btn btn-primary disabled" ng-show="isDefault" disabled>
-                                <span class="picto-save"></span>
-                            </button>
-                        </li>
                     </ul>
                 </div>
             </div>
@@ -81,7 +73,6 @@
         <script src="/bower_components/angular/angular.min.js"></script>
         <script src="/bower_components/angular-swagger-ui/dist/scripts/swagger-ui.min.js"></script>
         <script src="/bower_components/angular-resource/angular-resource.min.js"></script>
-        <script src="/bower_components/angular-cookies/angular-cookies.min.js"></script>
         <script src="/bower_components/angular-sanitize/angular-sanitize.min.js"></script>
         <script>
         var swaggerBrowserConfig = {
@@ -94,32 +85,25 @@
         </script>
         <script>
             angular
-                .module('graviphotonSwagger', ['ngResource', 'ngSanitize', 'ngCookies', 'swaggerUi'])
+                .module('graviphotonSwagger', ['ngResource', 'ngSanitize', 'swaggerUi'])
                 .constant('config', swaggerBrowserConfig)
                 .run(function(swaggerModules, swaggerUiHost, swaggerUiExplorerRequest){
                     swaggerModules.add(swaggerModules.BEFORE_DISPLAY, swaggerUiHost);
                     swaggerModules.add(swaggerModules.BEFORE_EXPLORER_LOAD, swaggerUiExplorerRequest);
                 })
-                .controller('SwaggerUiCtrl', function($scope, $cookies, $rootScope, $location, airbrake, Registry) {
+                .controller('SwaggerUiCtrl', function($scope, $rootScope, $location, airbrake, Registry) {
                     $scope.isLoading = false;
 
                     $scope.hosts = Registry.query();
 
-                    $scope.cookieUrl = $cookies.swaggerUrl;
                     if ($location.search().host) {
                         $scope.host = {
                             "ref": $location.search().host
                         };
                         $scope.isLoading = true;
-                    } else if ($cookies.swaggerUrl) {
-                        $scope.host = {
-                            "ref": $cookies.swaggerUrl
-                        };
-                        $scope.isLoading = true;
                     } else {
                         $scope.url = false;
                     }
-                    $scope.isDefault = $scope.cookieUrl == $scope.host.ref;
                     $rootScope.url = $scope.host.ref + '/swagger.json';
 
                     $scope.onError = function(data, status) {
@@ -135,12 +119,6 @@
                         $scope.isError = false;
                         $rootScope.url = $scope.host.ref + '/swagger.json';
                         $location.search('host', $scope.host.ref);
-                        $scope.isDefault = $scope.cookieUrl == $scope.host.ref;
-                    };
-                    $scope.onSetDefault = function() {
-                        $cookies.swaggerUrl = $scope.host.ref;
-                        $scope.cookieUrl = $cookies.swaggerUrl;
-                        $scope.isDefault = true;
                     };
 
                 })
