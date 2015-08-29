@@ -103,7 +103,7 @@
                         $rootScope.url = $scope.host.ref + '/swagger.json';
                         $scope.isLoading = true;
                     } else {
-                        $scope.url = false;
+                        $rootScope.url = false;
                     }
 
                     $scope.onError = function(data, status) {
